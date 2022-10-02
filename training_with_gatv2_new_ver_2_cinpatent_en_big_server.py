@@ -862,7 +862,7 @@ train_batch_size = 32
 device = "cuda"
 num_chosen_nodes = 30
 # sampler = MultiLayerFullNeighborSampler(1)
-num_sample = 3000
+num_sample = 2000
 sampler = dgl.dataloading.NeighborSampler([num_sample])
 
 torch.cuda.empty_cache()
