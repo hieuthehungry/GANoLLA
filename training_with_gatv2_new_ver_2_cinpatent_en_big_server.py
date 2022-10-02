@@ -882,7 +882,7 @@ gat2 = GAT(node_feats = dataset.graph.ndata["feat"].shape[1],
            device = device,
           label_features = features,
           label_edges = edges).to(device)
-gat2 = torch.nn.parallel.DistributedDataParallel(gat2)
+# gat2 = torch.nn.parallel.DistributedDataParallel(gat2)
 criterion = nn.BCEWithLogitsLoss()
 
 
