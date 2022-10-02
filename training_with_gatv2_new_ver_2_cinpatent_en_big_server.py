@@ -17,7 +17,7 @@ from torch import nn
 
 # from dgl.dataloading.pytorch  import NodeDataLoader, GraphDataLoader
 from tqdm import tqdm
-torch.distributed.init_process_group(backend='gloo', rank = 0, world_size = 1)
+torch.distributed.init_process_group(backend='gloo', init_method = "tcp://127.0.0.1:12584", rank = 0, world_size = 1)
 
 
 
