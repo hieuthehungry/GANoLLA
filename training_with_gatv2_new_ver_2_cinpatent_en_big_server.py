@@ -858,11 +858,11 @@ test_idx = torch.where(dataset.graph.ndata["test_mask"])[0].numpy().tolist()
 # val_idx = dgl.distributed.node_split(graph.ndata['val_mask'])
 # test_idx = dgl.distributed.node_split(graph.ndata['test_mask'])
 
-train_batch_size = 32
+train_batch_size = 16
 device = "cuda"
 num_chosen_nodes = 30
 sampler = MultiLayerFullNeighborSampler(1)
-# num_sample = 1000
+# num_sample = 3000
 # sampler = dgl.dataloading.NeighborSampler([num_sample])
 
 torch.cuda.empty_cache()
