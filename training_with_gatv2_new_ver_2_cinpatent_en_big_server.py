@@ -850,13 +850,13 @@ def evaluate(model, graph, sample_ind, labels, train_idx, val_idx, test_idx, bat
         preds,
     )
 
-# train_idx = torch.where(dataset.graph.ndata["train_mask"])[0].numpy().tolist()
-# val_idx = torch.where(dataset.graph.ndata["val_mask"])[0].numpy().tolist()
-# test_idx = torch.where(dataset.graph.ndata["test_mask"])[0].numpy().tolist()
+train_idx = torch.where(dataset.graph.ndata["train_mask"])[0].numpy().tolist()
+val_idx = torch.where(dataset.graph.ndata["val_mask"])[0].numpy().tolist()
+test_idx = torch.where(dataset.graph.ndata["test_mask"])[0].numpy().tolist()
 
-train_idx = dgl.distributed.node_split(graph.ndata['train_mask'])
-val_idx = dgl.distributed.node_split(graph.ndata['val_mask'])
-test_idx = dgl.distributed.node_split(graph.ndata['test_mask'])
+# train_idx = dgl.distributed.node_split(graph.ndata['train_mask'])
+# val_idx = dgl.distributed.node_split(graph.ndata['val_mask'])
+# test_idx = dgl.distributed.node_split(graph.ndata['test_mask'])
 
 train_batch_size = 32
 device = "cuda"
