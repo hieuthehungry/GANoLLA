@@ -1,0 +1,10 @@
+sentence-transformers
+# ogb
+# dgl-cu110
+Wikipedia-API
+torchmetrics
+pyarrow
+fastparquet
+fugashi[unidic-lite]
+matplotlib
+# torch  --extra-index-url https://download.pytorch.org/whl/cu113
