@@ -691,8 +691,17 @@ class GraphDataset(DGLDataset):
 dataset = GraphDataset()
 # dataset.graph = dgl.add_self_loop(dataset.graph)
 print(dataset.graph)
+nmap, emap = dgl.distributed.partition_graph(dataset.graph, graph_name='patent-graph',
+                                             num_parts=4,
+                                             out_path='4part_data',
+                                             balance_ntypes=dataset.graph.ndata['train_mask'],
+                                             balance_edges=True,
+                                             return_mapping=True)
 
+orig_node_emb = torch.zeros(dataset.graph.ndata['feat'].shape, dtype=dataset.graph.ndata['feat'].dtype)
+orig_node_emb[nmap] = dataset.graph.ndata['feat']
 
+graph = dgl.distributed.DistGraph('patent-graph')
 
 def vec_translate(a, my_dict):    
   return np.vectorize(my_dict.__getitem__)(a)
@@ -729,7 +738,7 @@ def get_block_and_nodes(graph, batch, num_chosen_nodes = 100, sampler = None, ge
 from sklearn.metrics import accuracy_score, f1_score, ndcg_score
 from torchmetrics import Precision
 
-def train(model, sample_ind, labels, criterion, optimizer, scheduler, batch_size = 16, num_chosen_nodes = 100, sampler = None, epoch = None, device = "cuda"):
+def train(model, graph, sample_ind, labels, criterion, optimizer, scheduler, batch_size = 16, num_chosen_nodes = 100, sampler = None, epoch = None, device = "cuda"):
     model.train()
 
     loss_sum, total = 0, 0
@@ -743,7 +752,7 @@ def train(model, sample_ind, labels, criterion, optimizer, scheduler, batch_size
         else:
           in_batch_sample = sample_ind[i:]
         
-        block, in_network_mapping, in_network_chosen_nodes = get_block_and_nodes(dataset.graph, in_batch_sample, 
+        block, in_network_mapping, in_network_chosen_nodes = get_block_and_nodes(graph, in_batch_sample, 
                                                                               num_chosen_nodes = num_chosen_nodes, sampler = sampler)
         pred = model([block.to(device)], in_network_chosen_nodes)
         loss = criterion(pred, labels[in_batch_sample].float().to(device))
@@ -764,7 +773,7 @@ def train(model, sample_ind, labels, criterion, optimizer, scheduler, batch_size
     return loss_sum / total
 
 @torch.no_grad()
-def evaluate(model, sample_ind, labels, train_idx, val_idx, test_idx, batch_size = 16, num_chosen_nodes = 100, sampler = None, epoch = None, device = "cuda"):
+def evaluate(model, graph, sample_ind, labels, train_idx, val_idx, test_idx, batch_size = 16, num_chosen_nodes = 100, sampler = None, epoch = None, device = "cuda"):
     model.eval()
 
     preds = torch.zeros(labels.shape).to(device)
@@ -784,7 +793,7 @@ def evaluate(model, sample_ind, labels, train_idx, val_idx, test_idx, batch_size
             else:
               in_batch_sample = sample_ind[i:]
             
-            block, in_network_mapping, in_network_chosen_nodes = get_block_and_nodes(dataset.graph, in_batch_sample, 
+            block, in_network_mapping, in_network_chosen_nodes = get_block_and_nodes(graph, in_batch_sample, 
                                                                                   num_chosen_nodes = num_chosen_nodes, sampler = sampler)
             pred = model([block.to(device)], in_network_chosen_nodes)
             preds[in_batch_sample] += pred
@@ -841,13 +850,13 @@ def evaluate(model, sample_ind, labels, train_idx, val_idx, test_idx, batch_size
         preds,
     )
 
-train_idx = torch.where(dataset.graph.ndata["train_mask"])[0].numpy().tolist()
-val_idx = torch.where(dataset.graph.ndata["val_mask"])[0].numpy().tolist()
-test_idx = torch.where(dataset.graph.ndata["test_mask"])[0].numpy().tolist()
-
-# train_idx = dgl.distributed.node_split(g.ndata['train_mask'], pb, force_even=True)
-# val_idx = 
+# train_idx = torch.where(dataset.graph.ndata["train_mask"])[0].numpy().tolist()
+# val_idx = torch.where(dataset.graph.ndata["val_mask"])[0].numpy().tolist()
 # test_idx = torch.where(dataset.graph.ndata["test_mask"])[0].numpy().tolist()
+
+train_idx = dgl.distributed.node_split(graph.ndata['train_mask'])
+val_idx = dgl.distributed.node_split(graph.ndata['val_mask'])
+test_idx = dgl.distributed.node_split(graph.ndata['test_mask'])
 
 train_batch_size = 32
 device = "cuda"
@@ -891,8 +900,8 @@ metric_history = []
 for e in range(1, epochs + 1):
   try:
     train_idx_random = random.sample(train_idx, k = len(train_idx))
-    loss = train(gat2, train_idx_random, dataset.graph.ndata["label"], criterion, optimizer, scheduler, batch_size = train_batch_size, num_chosen_nodes = num_chosen_nodes, sampler = sampler, epoch = e, device = device)
-    train_acc, val_acc, test_acc, train_loss, val_loss, test_loss, test_scores, _  = evaluate(gat2, train_idx  + val_idx + test_idx , dataset.graph.ndata["label"].to(device), train_idx, val_idx, test_idx,
+    loss = train(gat2, graph, train_idx_random, dataset.graph.ndata["label"], criterion, optimizer, scheduler, batch_size = train_batch_size, num_chosen_nodes = num_chosen_nodes, sampler = sampler, epoch = e, device = device)
+    train_acc, val_acc, test_acc, train_loss, val_loss, test_loss, test_scores, _  = evaluate(gat2, graph, train_idx  + val_idx + test_idx , dataset.graph.ndata["label"].to(device), train_idx, val_idx, test_idx,
                                                                 batch_size = train_batch_size, num_chosen_nodes = num_chosen_nodes, sampler = sampler, epoch = e, device = "cuda")
     print(f"Epoch: {e}")
     print(loss)
