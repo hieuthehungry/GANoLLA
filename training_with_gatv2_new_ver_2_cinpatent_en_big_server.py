@@ -17,6 +17,7 @@ from torch import nn
 
 # from dgl.dataloading.pytorch  import NodeDataLoader, GraphDataLoader
 from tqdm import tqdm
+torch.distributed.init_process_group(backend='gloo')
 
 
 
@@ -844,6 +845,10 @@ train_idx = torch.where(dataset.graph.ndata["train_mask"])[0].numpy().tolist()
 val_idx = torch.where(dataset.graph.ndata["val_mask"])[0].numpy().tolist()
 test_idx = torch.where(dataset.graph.ndata["test_mask"])[0].numpy().tolist()
 
+# train_idx = dgl.distributed.node_split(g.ndata['train_mask'], pb, force_even=True)
+# val_idx = 
+# test_idx = torch.where(dataset.graph.ndata["test_mask"])[0].numpy().tolist()
+
 train_batch_size = 32
 device = "cuda"
 num_chosen_nodes = 100
@@ -870,6 +875,7 @@ gat2 = GAT(node_feats = dataset.graph.ndata["feat"].shape[1],
           label_edges = edges).to(device)
 gat2 = torch.nn.parallel.DistributedDataParallel(gat2)
 criterion = nn.BCEWithLogitsLoss()
+
 
 optimizer = optim.AdamW(gat2.parameters(), lr=0.0005, weight_decay=0.001)
 
