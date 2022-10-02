@@ -17,7 +17,7 @@ from torch import nn
 
 # from dgl.dataloading.pytorch  import NodeDataLoader, GraphDataLoader
 from tqdm import tqdm
-torch.distributed.init_process_group(backend='gloo', init_method = "tcp://127.0.0.1:12584", rank = 0, world_size = 1)
+# torch.distributed.init_process_group(backend='gloo', init_method = "tcp://127.0.0.1:12584", rank = 0, world_size = 1)
 
 
 
@@ -691,17 +691,17 @@ class GraphDataset(DGLDataset):
 dataset = GraphDataset()
 # dataset.graph = dgl.add_self_loop(dataset.graph)
 print(dataset.graph)
-nmap, emap = dgl.distributed.partition_graph(dataset.graph, graph_name='patent-graph',
-                                             num_parts=4,
-                                             out_path='4part_data',
-                                             balance_ntypes=dataset.graph.ndata['train_mask'],
-                                             balance_edges=True,
-                                             return_mapping=True)
+# nmap, emap = dgl.distributed.partition_graph(dataset.graph, graph_name='patent-graph',
+#                                              num_parts=4,
+#                                              out_path='4part_data',
+#                                              balance_ntypes=dataset.graph.ndata['train_mask'],
+#                                              balance_edges=True,
+#                                              return_mapping=True)
 
-orig_node_emb = torch.zeros(dataset.graph.ndata['feat'].shape, dtype=dataset.graph.ndata['feat'].dtype)
-orig_node_emb[nmap] = dataset.graph.ndata['feat']
+# orig_node_emb = torch.zeros(dataset.graph.ndata['feat'].shape, dtype=dataset.graph.ndata['feat'].dtype)
+# orig_node_emb[nmap] = dataset.graph.ndata['feat']
 
-graph = dgl.distributed.DistGraph('patent-graph')
+graph = dataset.graph
 
 def vec_translate(a, my_dict):    
   return np.vectorize(my_dict.__getitem__)(a)
@@ -860,7 +860,7 @@ test_idx = dgl.distributed.node_split(graph.ndata['test_mask'])
 
 train_batch_size = 32
 device = "cuda"
-num_chosen_nodes = 100
+num_chosen_nodes = 50
 sampler = MultiLayerFullNeighborSampler(1)
 # num_sample = 1000
 # sampler = dgl.dataloading.NeighborSampler([num_sample])
